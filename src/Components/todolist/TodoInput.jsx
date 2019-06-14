@@ -11,6 +11,7 @@ class TodoInput extends Component {
 
   onSubmit = e => {
     e.preventDefault();
+
     this.props.addTodo(this.state);
     this.setState({ title: "", todo: "" });
   };

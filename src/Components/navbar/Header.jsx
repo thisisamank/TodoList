@@ -3,6 +3,8 @@ import { Navbar, NavbarBrand, NavLink, NavItem, Nav } from "reactstrap";
 
 class Header extends Component {
   render() {
+    // const user = this.props.user;
+    // const name = user.displayName;
     return (
       <div>
         <Navbar color="light" light expand="md">
@@ -14,7 +16,10 @@ class Header extends Component {
               <NavLink href="/about/">About</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink style={linkStyles} href="/about/">
+              <NavLink
+                target="_blank"
+                href="https://github.com/thisisamank/TodoList"
+              >
                 Github
               </NavLink>
             </NavItem>
@@ -25,7 +30,4 @@ class Header extends Component {
   }
 }
 
-const linkStyles = {
-  color: "black"
-};
 export default Header;
