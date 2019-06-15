@@ -9,7 +9,7 @@ class Header extends Component {
       <div>
         <Navbar color="light" light expand="md">
           <NavbarBrand style={{ fontSize: "1.5em" }} href="/">
-            Todo-List
+            To-do List beta
           </NavbarBrand>
           <Nav className="ml-auto">
             <NavItem>

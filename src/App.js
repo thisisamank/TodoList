@@ -10,6 +10,7 @@ import uuid from "uuid";
 import firebase from "firebase";
 import StyledFirebaseAuth from "react-firebaseui/StyledFirebaseAuth";
 import About from "./Components/about/About";
+import FirebaseUtil from "./database/FirebaseUtil";
 
 firebase.initializeApp({
   apiKey: "AIzaSyBssQncOUrTyStS8Oq8KetIIJ7C7sUfHkk",
@@ -20,45 +21,65 @@ firebase.initializeApp({
   messagingSenderId: "280850416757",
   appId: "1:280850416757:web:94c4d751ecc091ce"
 });
+let database = firebase.firestore();
 class App extends Component {
-  RouteGuard = Component => {
-    console.log(this.state.isSignedIn);
-    if (this.state.isSignedIn === true) {
-      firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      return Component;
-    } else {
-      return (
-        <div>
-          {console.log("something is wrong")}
-          <StyledFirebaseAuth
-            uiConfig={this.uiConfig}
-            firebaseAuth={
-              firebase.auth()
-              // .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-              // .then(() => firebase.auth())
-              // .catch(console.log("error"))
-            }
-          />
-        </div>
-      );
-    }
-  };
+  /**
+   * This method takes a Components as a parameter and checks whether the user * is signed in or not, it returns the same component if @isSignedIn istate
+   * is true otherwise returns firebaseui for logging in
+   */
 
   state = {
-    isSignedIn: false,
-    todos: []
+    todos: [],
+    uid: ""
   };
+
   uiConfig = {
     signInFlow: "popup",
     signInOptions: [
       firebase.auth.GoogleAuthProvider.PROVIDER_ID,
       firebase.auth.EmailAuthProvider.PROVIDER_ID
-    ]
+    ],
+    callbacks: {
+      signInSuccessWithAuthResult: result => {
+        localStorage.setItem("isSignedIn", JSON.stringify(true));
+        localStorage.setItem("uid", result.uid);
+        this.setState({ uid: firebase.auth().currentUser.uid });
+        console.log(this.state.uid);
+      }
+    }
   };
-
+  // getFirebaseData() {
+  //   let todolist;
+  //   let getTodoFromFirebase = database.collection(localStorage.uid);
+  //   getTodoFromFirebase
+  //     .get()
+  //     .then(doc => doc.docs.filter(d =>
+  //     .catch(e => console.log(e));
+  //   console.log(todolist);
+  // }
   componentDidMount() {
+    console.log(localStorage.uid);
+    let getTodoFromFirebase = database.collection(localStorage.uid);
+    getTodoFromFirebase
+      .get()
+      .then(doc => {
+        console.log(doc);
+        doc.docs.filter(d => {
+          this.setState({ todos: [...this.state.todos, d.data()] });
+        });
+      })
+      .catch(e => console.log(e));
+
+    this.setState({
+      isSignedIn: localStorage.isSignedIn
+    });
     firebase.auth().onAuthStateChanged(user => {
-      this.setState({ isSignedIn: !!user });
+      //console.log(user.displayName + " component did mount");
+      if (user === null) {
+        localStorage.setItem("isSignedIn", JSON.stringify(false));
+      } else {
+        localStorage.setItem("isSignedIn", JSON.stringify(true));
+      }
     });
   }
 
@@ -66,14 +87,48 @@ class App extends Component {
     const { title, todo } = props;
     const id = uuid.v1();
     const isCompleted = false;
-    this.setState({
-      todos: [...this.state.todos, { id, title, todo, isCompleted }]
-    });
+    const newTodo = { id, title, todo, isCompleted };
+    localStorage.setItem("uid", firebase.auth().currentUser.uid);
+    database
+      .collection(firebase.auth().currentUser.uid)
+      .doc(id)
+      .set(newTodo)
+      .then(() => {
+        this.setState({
+          todos: [...this.state.todos, newTodo]
+        });
+      })
+      .catch(e => console.log(e));
   };
+
   delTodo = id => {
-    this.setState({
-      todos: this.state.todos.filter(item => item.id !== id)
-    });
+    database
+      .collection(localStorage.uid)
+      .doc(id)
+      .delete()
+      .then(() => {
+        console.log("deleted + ", id);
+        this.setState({
+          todos: this.state.todos.filter(item => item.id !== id)
+        });
+      })
+      .catch(e => console.log(e));
+  };
+
+  RouteGuard = Component => {
+    if (localStorage.isSignedIn == "true") {
+      return Component;
+    } else {
+      return (
+        <div>
+          {console.log("Firebase Auth Called!")}
+          <StyledFirebaseAuth
+            uiConfig={this.uiConfig}
+            firebaseAuth={firebase.auth()}
+          />
+        </div>
+      );
+    }
   };
   render() {
     return (

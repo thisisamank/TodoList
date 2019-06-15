@@ -28,7 +28,7 @@ class TodoInput extends Component {
             onChange={this.onChange}
           />
           <Input
-            placeholder="Todo"
+            placeholder="To-do"
             name="todo"
             type="text"
             value={this.state.todo}
